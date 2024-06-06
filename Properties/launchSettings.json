@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FormOneFeed": {
+      "commandName": "Project",
+      "commandLineArgs": "sample-config.json"
+    }
+  }
+}

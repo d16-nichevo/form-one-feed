@@ -1,0 +1,16 @@
+{
+  "CombinedFeed": {
+    "Format": "rss",
+    "Title": "My Feed Mix",
+    "Description": "This is my mix of feeds.",
+    "ImageUrl": "https://i.imgur.com/MsDJpcz.png",
+    "MaxItemCount": 1000,
+    "ItemMaxAgeInDays": 30,
+    "OutputFilename": "c:/temp/combined-feed.rss",
+    "PrefixFeedTitle": true
+  },
+  "SourceFeeds": [
+    "http://feeds.feedburner.com/OhNoPodcast",
+    "https://audioboom.com/channels/2399216.rss"
+  ]
+}
