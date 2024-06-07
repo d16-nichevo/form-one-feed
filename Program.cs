@@ -119,18 +119,25 @@ namespace FormOneFeed
         /// </param>
         private static void GetItemsFromFeed(string feedUri, DateTime? oldestAllowed, bool prependFeedTitle)
         {
-            var xml = XmlReader.Create(feedUri);
-            var sf = SyndicationFeed.Load(xml);
-            foreach (var item in sf.Items)
+            try
             {
-                if (oldestAllowed == null || item.PublishDate.DateTime >= oldestAllowed)
+                var xml = XmlReader.Create(feedUri);
+                var sf = SyndicationFeed.Load(xml);
+                foreach (var item in sf.Items)
                 {
-                    if (prependFeedTitle)
+                    if (oldestAllowed == null || item.PublishDate.DateTime >= oldestAllowed)
                     {
-                        item.Title = new TextSyndicationContent($"{sf.Title.Text} — {item.Title.Text}");
+                        if (prependFeedTitle)
+                        {
+                            item.Title = new TextSyndicationContent($"{sf.Title.Text} — {item.Title.Text}");
+                        }
+                        FeedItems.Add(item);
                     }
-                    FeedItems.Add(item);
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error while loading content of feed at {feedUri}. {ex.Message}", ex);
             }
         }
     }
