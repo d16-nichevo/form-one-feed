@@ -6,33 +6,66 @@ using System.Xml;
 
 namespace FormOneFeed
 {
+    // Form One Feed
+    // For more information, see:
+    // https://github.com/d16-nichevo/form-one-feed
     internal class Program
     {
         // The collection of items from all the feeds we build up,
         // thread-safe for parallel use:
         private static ConcurrentBag<SyndicationItem> FeedItems = new ConcurrentBag<SyndicationItem>();
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             try
             {
-                // Check usage:
-                if (args.Length != 1 || !File.Exists(args[0]))
+                // Check usage.
+                // https://learn.microsoft.com/en-us/windows/terminal/command-line-arguments?tabs=windows#options-and-commands
+                if (args.Length == 0
+                    || new string[] { "--help", "-h", "-?", "/?" }.Any(x => x.Equals(args[0], StringComparison.OrdinalIgnoreCase)))
                 {
                     var appName = System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpper();
-                    Console.WriteLine("Fetches multiple RSS feeds and outputs a single, combined, feed.");
+                    Console.WriteLine("Fetches multiple RSS feeds and outputs a single combined feed.");
                     Console.WriteLine();
-                    Console.WriteLine($"{appName} config");
+                    Console.WriteLine($"{appName} configs");
                     Console.WriteLine();
-                    Console.WriteLine("\tconfig\tPath to the config file. This is mandatory.");
+                    Console.WriteLine("\tconfigs\tA list of one or more locations of JSON configuration files, in ");
+                    Console.WriteLine("\t\torder from lowest to highest precedence. Each config must be");
+                    Console.WriteLine("\t\tseparated by a space. Configs can be on the local file system");
+                    Console.WriteLine("\t\tor at a valid web URL.");
                     Console.WriteLine("");
                     Console.WriteLine("For more information, visit https://github.com/d16-nichevo/form-one-feed");
                     Environment.Exit(1);
                 }
 
-                // Read our settings from config.json:
-                var builder = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile(args[0], optional: false);
+                // Read specified config files:
+                HttpClient client = new HttpClient();
+                var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory());
+                foreach (var arg in args)
+                {
+                    // Local file or URL?
+                    bool argIsFile = File.Exists(arg);
+                    bool argIsUrl = Uri.IsWellFormedUriString(arg, UriKind.Absolute);
+                    if (argIsFile)
+                    {
+                        // Read from a local file:
+                        builder = builder.AddJsonFile(arg, optional: false);
+                    }
+                    else if (argIsUrl)
+                    {
+                        // Read from URL:
+                        client.DefaultRequestHeaders.Add("User-Agent", "Other");
+                        var stream = await client.GetStreamAsync(arg);
+                        builder = builder.AddJsonStream(stream);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Argument invalid:");
+                        Console.WriteLine(arg);
+                        Console.WriteLine();
+                        Console.WriteLine("Is it a valid path to a local file or a valid web URL?");
+                        Environment.Exit(1);
+                    }
+                }
                 IConfiguration config = builder.Build();
 
                 // Load all feeds, and collect items from them:
