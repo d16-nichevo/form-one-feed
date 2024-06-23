@@ -36,10 +36,18 @@ Usage is pretty simple. From the command line, run:
 formonefeed config
 ```
 
-Where `config` is the path to a JSON file that contains various settings. Example:
+Where `config` is the path to a JSON file that contains various settings.
+
+Example 1 -- A Local File:
 
 ```bash
 formonefeed c:/mydirectory/funny-podcasts.json
+```
+
+Example 2 -- From the Internet:
+
+```bash
+formonefeed http://my-fake-site.org/history-podcasts.json
 ```
 
 # JSON Config File
@@ -85,6 +93,20 @@ Fields:
 1. Add a [query string](https://en.wikipedia.org/wiki/Query%5Fstring) to your `SourceFeeds` URLs if they have obscure URLs so you can identify them later. For example:
    * `https://audioboom.com/channels/2399216.rss` doesn't tell you what podcast this was for.
    * `https://audioboom.com/channels/2399216.rss?NoSuchThingAsAFish` is better, it helps identify the podcast, and should still work fine as a feed URL.
+
+## Multiple Configs
+
+You can accually specify more than one config, like this:
+
+```bash
+formonefeed c:/mydirectory/funny-podcasts.json http://my-fake-site.org/history-podcasts.json
+```
+
+Each config should be separated by a space. 
+
+This can be useful if you wish to set common settings in one file, but override them with partial settings in another file.
+
+Items later in the list "overwrite" settings from items earlier in the list. I'm not sure exactly how this works, I just let [`Microsoft.Extensions.Configuration.ConfigurationBuilder`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.configurationbuilder) do its thing.
 
 # Future Development
 
