@@ -181,13 +181,30 @@ namespace FormOneFeed
             {
                 foreach (var item in sf.Items)
                 {
-                    if (oldestAllowed == null || item.PublishDate.DateTime >= oldestAllowed)
+                    try
                     {
-                        if (prependFeedTitle)
+                        if (oldestAllowed == null || item.PublishDate.DateTime >= oldestAllowed)
                         {
-                            item.Title = new TextSyndicationContent($"{sf.Title.Text} — {item.Title.Text}");
+                            if (prependFeedTitle)
+                            {
+                                item.Title = new TextSyndicationContent($"{sf.Title.Text} — {item.Title.Text}");
+                            }
+                            FeedItems.Add(item);
                         }
-                        FeedItems.Add(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        string itemId;
+                        try
+                        {
+                            itemId = item.Id;
+                        }
+                        catch
+                        {
+                            itemId = "(Unknown ID)";
+                        }
+                        Console.WriteLine($"Ignoring item {itemId} from feed {feedUri} due to error: {ex.Message}", ex);
+                        sf = null;
                     }
                 }
             }
