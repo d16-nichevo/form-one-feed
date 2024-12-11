@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.ServiceModel.Syndication;
+using System.Xml;
 
 namespace FormOneFeed
 {
@@ -51,6 +53,25 @@ namespace FormOneFeed
                 }
             }
             return valid;
+        }
+
+        /// <summary>
+        /// Write a feed to an XmlTextWriter with RSS or Atom formatting.
+        /// </summary>
+        /// <param name="feed">The feed to write.</param>
+        /// <param name="isAtom">True if Atom formatting is to be used. Otherwise, us RSS formatting.</param>
+        internal static void WriteToFormatter(this XmlTextWriter rssWriter, SyndicationFeed feed, bool isAtom)
+        {
+            if (isAtom)
+            {
+                Atom10FeedFormatter atom10FeedFormatter = feed.GetAtom10Formatter();
+                atom10FeedFormatter.WriteTo(rssWriter);
+            }
+            else
+            {
+                Rss20FeedFormatter rssFormatter = feed.GetRss20Formatter(false);
+                rssFormatter.WriteTo(rssWriter);
+            }
         }
     }
 }

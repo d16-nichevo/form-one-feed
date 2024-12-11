@@ -8,8 +8,6 @@ C# console app that can:
 
 The broad idea is that this app can be run on a schedule (e.g. as a [Windows Scheduled Task](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page)), and the resulting output file can be deployed to a website where it can be accessed.
 
-Note: Form One Feed does *not* deploy the RSS file to a website. That's up to you to manage.
-
 # Why Merge Feeds?
 
 I have a very particular setup desired for my podcast listening. But I also want to be lightly attached to the podcast app on my phone. I don't want to spend hours configuring it only to have that work invalidated by data loss, a change of phone, or a change of app. I also don't much like the convoluted inferface most podcast apps have.
@@ -36,7 +34,7 @@ Usage is pretty simple. From the command line, run:
 formonefeed config
 ```
 
-Where `config` is the path to a JSON file that contains various settings.
+Where `config` is the path to a JSON file that contains various settings, located either on the local filesystem or an HTTP server.
 
 Example 1 -- A Local File:
 
@@ -44,7 +42,7 @@ Example 1 -- A Local File:
 formonefeed c:/mydirectory/funny-podcasts.json
 ```
 
-Example 2 -- From the Internet:
+Example 2 -- An HTTP server (i.e. on the internet):
 
 ```bash
 formonefeed http://my-fake-site.org/history-podcasts.json
@@ -65,8 +63,10 @@ Fields are explained below, but the actual code might out-pace this documentatio
     "ImageUrl": "https://i.imgur.com/MsDJpcz.png",
     "MaxItemCount": 1000,
     "ItemMaxAgeInDays": 30,
-    "OutputFilename": "c:/temp/combined-feed.rss",
-    "PrefixFeedTitle": true
+    "PrefixFeedTitle": true,
+    "Output": "c:/temp/combined-feed.rss",
+    "UploadUsername": "merisiel",
+    "UploadPassword": "d4gg3r5"
   },
   "SourceFeeds": [
     "http://feeds.feedburner.com/OhNoPodcast",
@@ -83,16 +83,20 @@ Fields:
   * `Format`: either `rss` or `atom`. Defaults to `rss`.
   * `ItemMaxAgeInDays`: Any feed item older than this many days will be ignored.
   * `MaxItemCount`: The combined feed will stop after this many items.  
-  * `OutputFilename`: Path to the merged feed file that Form One Feed will create.
+  * `Output`: Path to the merged feed file that Form One Feed will create. Existing files will be overwritten. Currently supports local filesystem and FTP.
+    * **Filesystem**: Example: `c:/temp/myfeed.rss`
+    * **FTP**: Example: `ftp://myserver.net/htdocs/rss/myfeed.rss` 
   * `PrefixFeedTitle`: Prefix the channel title to each feed item's title.
+  * `UploadPassword`: The password for the FTP account. Only required when using FTP (see `Output`). 
+  * `UploadUsername`: The username for the FTP account. Only required when using FTP (see `Output`). 
 * `SourceFeeds`: A list of feeds you want merged.
 
 💡 **Useful Tips**
 
-1. Use more than one JSON config file if you have more than one merge job to do.
 1. Add a [query string](https://en.wikipedia.org/wiki/Query%5Fstring) to your `SourceFeeds` URLs if they have obscure URLs so you can identify them later. For example:
    * `https://audioboom.com/channels/2399216.rss` doesn't tell you what podcast this was for.
    * `https://audioboom.com/channels/2399216.rss?NoSuchThingAsAFish` is better, it helps identify the podcast, and should still work fine as a feed URL.
+1. When uploading to FTP, ensure the full directory path already exists on the server, as FormOneFeed will not create any directories.
 
 ## Multiple Configs
 
@@ -118,5 +122,4 @@ If there's enough demand I may make changes and improvements. Some possible idea
 1. Better instructions for less-technical users.
 1. More robust and informative error-handling.
 1. Add more options to how feeds are merged.
-1. Add the ability for the software to deploy the RSS file (e.g. by FTP).
 1. Create a GUI application rather than a console app.

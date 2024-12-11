@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentFTP;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
 using System.ServiceModel.Syndication;
 using System.Text;
@@ -110,30 +111,40 @@ namespace FormOneFeed
                 }
 
                 // Prepare to write the combined feed:
-                var outputFilename = config.GetSection("CombinedFeed:OutputFilename").Get<string>();
-                var rssWriter = new XmlTextWriter(outputFilename!, Encoding.UTF8);
-                rssWriter.Formatting = Formatting.Indented;
+                bool isAtom = config.CheckConfigVal("CombinedFeed:Format", typeof(string))
+                                && config.GetSection("CombinedFeed:Format").Get<string>()!.Equals("atom", StringComparison.OrdinalIgnoreCase);
+                bool isFtp = config.CheckConfigVal("CombinedFeed:OutputType", typeof(string))
+                                && config.GetSection("CombinedFeed:OutputType").Get<string>()!.Equals("ftp", StringComparison.OrdinalIgnoreCase);
+                var output = config.GetSection("CombinedFeed:Output").Get<string>() ?? String.Empty;
+                Uri outputUri = new Uri(output);
 
-                // What format? RSS or Atom?
-                if (config.CheckConfigVal("CombinedFeed:Format", typeof(string))
-                    && config.GetSection("CombinedFeed:Format").Get<string>()!.Equals("atom", StringComparison.OrdinalIgnoreCase))
+                // Write to the desired location:
+                if (outputUri.Scheme == Uri.UriSchemeFtp || outputUri.Scheme == Uri.UriSchemeFtps)
                 {
-                    Atom10FeedFormatter atom10FeedFormatter = combinedFeed.GetAtom10Formatter();
-                    atom10FeedFormatter.WriteTo(rssWriter);
+                    // FTP or FTPS:
+                    var username = config.GetSection("CombinedFeed:UploadUsername").Get<string>() ?? String.Empty;
+                    var password = config.GetSection("CombinedFeed:UploadPassword").Get<string>() ?? String.Empty;
+                    WriteToFtp(combinedFeed, isAtom, outputUri.Host, username, password, outputUri.AbsolutePath);
+                }
+                else if (outputUri.Scheme == Uri.UriSchemeFile)
+                {
+                    // Local filesystem:
+                    WriteToFilesystem(combinedFeed, isAtom, outputUri.AbsolutePath);
                 }
                 else
                 {
-                    Rss20FeedFormatter rssFormatter = combinedFeed.GetRss20Formatter(false);
-                    rssFormatter.WriteTo(rssWriter);
+                    throw new InvalidOperationException($"Unknown output type '{output}'.");
                 }
-
-                // Flush and close:
-                rssWriter.Close();
             }
             catch (Exception ex)
             {
                 // On any error, throw a generic message:
                 Console.WriteLine($"ERROR: {ex.Message}");
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                    Console.WriteLine($"INNER EXCEPTION: {ex.Message}");
+                }
                 // Console.WriteLine(ex.ToString());
                 Environment.Exit(1);
             }
@@ -180,6 +191,43 @@ namespace FormOneFeed
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Write a feed to a filename.
+        /// </summary>
+        /// <param name="feed">The feed to write.</param>
+        /// <param name="filename">A full path to a filename on the local file system.</param>
+        /// <param name="isAtom">If true, write in Atom format. RSS otherwise.</param>
+        private static void WriteToFilesystem(SyndicationFeed feed, bool isAtom, string filename)
+        {
+            var rssWriter = new XmlTextWriter(filename!, Encoding.UTF8);
+            rssWriter.Formatting = Formatting.Indented;
+            rssWriter.WriteToFormatter(feed, isAtom);
+            rssWriter.Close();
+        }
+
+        /// <summary>
+        /// Write a feed to an FTP location.
+        /// </summary>
+        /// <param name="feed">The feed to write.</param>
+        /// <param name="isAtom">If true, write in Atom format. RSS otherwise.</param>
+        /// <param name="host">The FTP host.</param>
+        /// <param name="username">The FTP username.</param>
+        /// <param name="password">The FTP password.</param>
+        /// <param name="remotePath">The remote path on the FTP server.</param>
+        private static void WriteToFtp(SyndicationFeed feed, bool isAtom, string host, string username, string password, string remotePath)
+        {
+            var stream = new MemoryStream();
+            var rssWriter = new XmlTextWriter(stream, Encoding.UTF8);
+            rssWriter.Formatting = Formatting.Indented;
+            rssWriter.WriteToFormatter(feed, isAtom);
+
+            FtpClient client = new FtpClient(host, username, password);
+            client.AutoConnect();
+            client.UploadStream(stream, remotePath, FtpRemoteExists.Overwrite, false);
+            rssWriter.Close();
+            stream.Close();
         }
     }
 }

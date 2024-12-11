@@ -6,8 +6,10 @@
     "ImageUrl": "https://i.imgur.com/MsDJpcz.png",
     "MaxItemCount": 1000,
     "ItemMaxAgeInDays": 30,
-    "OutputFilename": "c:/temp/combined-feed.rss",
-    "PrefixFeedTitle": true
+    "PrefixFeedTitle": true,
+    "Output": "c:/temp/combined-feed.rss",
+    "UploadUsername": "merisiel",
+    "UploadPassword": "d4gg3r5"
   },
   "SourceFeeds": [
     "http://feeds.feedburner.com/OhNoPodcast",
