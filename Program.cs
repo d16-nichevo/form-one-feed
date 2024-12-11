@@ -244,7 +244,6 @@ namespace FormOneFeed
             client.AutoConnect();
             client.UploadStream(stream, remotePath, FtpRemoteExists.Overwrite, false);
             rssWriter.Close();
-            stream.Close();
         }
     }
 }

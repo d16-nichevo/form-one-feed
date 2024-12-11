@@ -72,6 +72,8 @@ namespace FormOneFeed
                 Rss20FeedFormatter rssFormatter = feed.GetRss20Formatter(false);
                 rssFormatter.WriteTo(rssWriter);
             }
+            rssWriter.Flush();
+            rssWriter.BaseStream.Position = 0;
         }
     }
 }
